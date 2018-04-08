@@ -35,7 +35,13 @@ export default class SPList extends React.Component {
   progressStyle:{
     marginLeft: 'auto',
     marginRight: 'auto',
-  }
+    display: 'block',
+  },
+  progressLabelStyle:{
+    marginLeft: 'auto',
+    marginRight: 'auto',
+    textAlign: 'center',
+  },
 };
 
 
@@ -96,19 +102,16 @@ export default class SPList extends React.Component {
     //add nested row on selection
     var items = this.state.items.slice();
     if(index.length == 0){
-      console.log('deleting exising and unselecting');
       //if already selected, delete child row
       items.splice(this.state.child,1);
       this.setState({items:items,selected:[],child:null});
     }
     else if(index[0] == this.state.child){
       //if row is child do nothing
-      console.log('child selected, do nothing');
       return;
     }
     else{
       //if new row delete existing child, then create new
-      console.log('deleting exising and create new');
       if(this.state.child!=null){
         items.splice(this.state.child,1);
         index[0] = index[0]>this.state.child?index[0]-1:index[0]; //decrement since removed an element before it
@@ -160,7 +163,7 @@ export default class SPList extends React.Component {
 
   render() {
     //if items is not loaded yet show progress spinner
-    const tableData = (!this.state.isLoaded)?(<div><CircularProgress size={60} thickness={7} style={this.styles.progressStyle}/><p>Loading Data</p></div>):
+    const tableData = (!this.state.isLoaded)?(<div><CircularProgress size={60} thickness={7} style={this.styles.progressStyle}/><p style={this.styles.progressLabelStyle}>Loading Data</p></div>):
       (<DataTables
         title={decodeURI(this.props.listName).split().map((word)=>(word.charAt(0).toUpperCase() + word.slice(1))).join()}
         titleStyle={this.styles.titleStyle}
