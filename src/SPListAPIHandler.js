@@ -1,20 +1,18 @@
 import React, { Component } from "react";
 
 export default class SPListAPIHandler {
-  constructor(listTitle,successCallback,errorCallback) {
+  constructor() {
     this.cols = [];
-    this.colMachineNames = [];
-    this.items = [];
-    this.listTitle = listTitle;
-    this.errorCallback = errorCallback;
-    this.successCallback = successCallback;
+    //this.colMachineNames = [];
+    //this.items = [];
+    //this.listTitle = listTitle;
+    //this.errorCallback = errorCallback;
+  //  this.successCallback = successCallback;
   }
 
-  getItems(){
+/*  getItems(){
     //https://analytics-dev.asu.edu/training/_api/Web/Lists/getByTitle('Data%20Source%20Connection%20Info')/items
     //console.log('/training/_api/Web/Lists/getByTitle(\'' + this.listTitle + '\')/items?select=' + this.colMachineNames.join());
-
-    //TODO add filter param to build out drill through on list items
       $.ajax({
             url: '/training/_api/Web/Lists/getByTitle(\'' + this.listTitle + '\')/items?$select=' + this.colMachineNames.join(),
             type: 'GET',
@@ -83,7 +81,7 @@ export default class SPListAPIHandler {
               this.errorCallback;
             }).bind(this)
           }); // end AJAX query
-  }
+  } */
 
  /* below modified from https://sharepoint.stackexchange.com/questions/135936/how-to-get-all-items-in-a-view-using-rest-api/136002 */
   executeJson(url,method = 'GET',payload,headers = {})
@@ -105,10 +103,10 @@ export default class SPListAPIHandler {
       return $.ajax(ajaxOptions);
   }
 
-  getListItems(webUrl, listTitle, queryText)
-  {
+  getListItems(webUrl, listTitle, queryText = '', odataQuery = '')
+  {   //gets all items from sp list with optional caml query and odata query
       var viewXml = '<View><Query>' + queryText + '</Query></View>';
-      var url = webUrl + "/_api/web/lists/getbytitle('" + listTitle + "')/getitems";
+      var url = webUrl + "/_api/web/lists/getbytitle('" + listTitle + "')/getitems" + odataQuery;
       var queryPayload = {
                  'query' : {
                         '__metadata': { 'type': 'SP.CamlQuery' },
@@ -118,14 +116,35 @@ export default class SPListAPIHandler {
       return this.executeJson(url,"POST",queryPayload);
   }
 
-  getListViewItems(webUrl,listTitle,viewTitle = 'All Items')
-  {
+  getListViewItems(webUrl,listTitle,viewTitle = 'All Items', odataFilter = '')
+  {   //gets all items from a list view with option view title and odata filter
        var url = webUrl + "/_api/web/lists/getByTitle('" + listTitle + "')/Views/getbytitle('" + viewTitle + "')/ViewQuery";
        return this.executeJson(url).then(
            (function(data){
                var viewQuery = data.d.ViewQuery;
-               return this.getListItems(webUrl,listTitle,viewQuery);
+               return this.getListViewFields(webUrl,listTitle,viewTitle,viewQuery,odataFilter);
            }).bind(this));
+  }
+
+  getListViewFields(webUrl,listTitle,viewTitle = 'All Items', queryText = '', odataFilter = '')
+  {    //gets the fields and items from a list view with optional caml query and odata filter
+        var url = webUrl + "/_api/web/lists/getByTitle('" + listTitle + "')/Views/getbytitle('" + viewTitle + "')/ViewFields"
+        return this.executeJson(url).then(
+            (function(data){
+                this.getFieldCollection(webUrl,listTitle,data.d.Items.results);
+                var odataQuery = '?$select=' + data.d.Items.results.join(); //build select query
+                odataQuery += '&' + odataFilter;
+                return this.getListItems(webUrl,listTitle,queryText,odataQuery);
+            }).bind(this));
+  }
+
+  getFieldCollection(webUrl,listTitle,fields)
+  {   //gets the field details from an array of fields
+      var url = webUrl + "/_api/web/lists/getByTitle('" + listTitle + "')/fields?$filter=(InternalName eq '" + fields.join("')or(InternalName eq '") + "')";
+      return this.executeJson(url).then(
+          (function(data){
+              this.cols = data.d.results;
+          }).bind(this));
   }
 
 }

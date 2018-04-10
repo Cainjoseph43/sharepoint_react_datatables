@@ -44,20 +44,56 @@ export default class SPList extends React.Component {
   },
 };
 
+  mapColumns(data){
+      //maping the returned object to what datatables is expecting for columns prop
+      return (data.map((colData,index)=> {
+          if(index==0){
+            //if first column and 3 or fewer keys exist, assume it is child table and add styles
+            return ({
+            key: colData.InternalName,
+            label: colData.Title,
+            sortable: true,
+            tooltip: colData.Description,
+            style: {
+              whiteSpace: 'normal',
+            },
+            render: (col, row) => (Object.keys(row).length < 4) ? <div id={'childTable'}
+                                                                    style={{position:'relative',zIndex:'10',}}>{col}</div>
+                                                            : <div dangerouslySetInnerHTML={{__html: col}} />
+            });
+          }
+          else{
+            //any other col
+            return ({
+              key: colData.InternalName,
+              label: colData.Title,
+              sortable: true,
+              tooltip: colData.Description,
+              style: {
+                whiteSpace: 'normal',
+              },
+              render: (col, row) => <div dangerouslySetInnerHTML={{__html: col}} />
+            });
+        }
+      })
+    );
+  }
 
   componentDidMount() {
     //get list data from SP api
-    const MySPAPIHandler = new SPListAPIHandler(this.props.listName,
+    /*const MySPAPIHandler = new SPListAPIHandler(this.props.listName,
                                   (function(){this.setState({isLoaded:true,cols:MySPAPIHandler.cols,items:MySPAPIHandler.items,allItems:MySPAPIHandler.items});}).bind(this),
                                   function(){console.log('api error')});
-    //gets data by list name (initiallized above)
-    MySPAPIHandler.getCols();
+    MySPAPIHandler.getCols();*/
+    const MySPAPIHandler = new SPListAPIHandler();
     //gets data by view name (still being implemented)
     MySPAPIHandler.getListViewItems(_spPageContextInfo.webAbsoluteUrl,this.props.listName)
-    .done(function(data)
+    .done((function(data)
     {
-         console.log(data.d.results);
-    })
+         this.setState({isLoaded:true,cols:this.mapColumns(MySPAPIHandler.cols),items:data.d.results,allItems:data.d.results});
+         console.log(this.state.items);
+         console.log(this.state.cols);
+    }).bind(this))
     .fail(
         function(error){
             console.log(JSON.stringify(error));
@@ -147,7 +183,7 @@ export default class SPList extends React.Component {
             Test3:'Value33'
           }
       ];
-      items.splice(index[0]+1,0,{Title: <DataTables tableBodyStyle={this.styles.tableBodyStyle}
+      items.splice(index[0]+1,0,{LinkTitleNoMenu: <DataTables tableBodyStyle={this.styles.tableBodyStyle}
                                                     tableStyle={this.styles.tableStyle}
                                                     tableWrapperStyle={this.styles.tableWrapperStyle}
                                                     columns={nestedCol}
